@@ -1,11 +1,15 @@
 package com.jk.ui;
 
+import com.jk.domain.GameInfo;
+
 import javax.swing.*;
 import javax.swing.border.BevelBorder;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.io.*;
+import java.util.Properties;
 import java.util.Random;
 
 public class GameJFrame extends JFrame implements KeyListener, ActionListener {
@@ -36,6 +40,21 @@ public class GameJFrame extends JFrame implements KeyListener, ActionListener {
     JMenuItem girl = new JMenuItem("美女");
     JMenuItem animal = new JMenuItem("动物");
     JMenuItem sport = new JMenuItem("运动");
+
+    JMenu saveJMenu = new JMenu("存档");
+    JMenu loadJMenu = new JMenu("读档");
+
+    JMenuItem saveItem0 = new JMenuItem("存档0(空)");
+    JMenuItem saveItem1 = new JMenuItem("存档1(空)");
+    JMenuItem saveItem2 = new JMenuItem("存档2(空)");
+    JMenuItem saveItem3 = new JMenuItem("存档3(空)");
+    JMenuItem saveItem4 = new JMenuItem("存档4(空)");
+
+    JMenuItem loadItem0 = new JMenuItem("读档0(空)");
+    JMenuItem loadItem1 = new JMenuItem("读档1(空)");
+    JMenuItem loadItem2 = new JMenuItem("读档2(空)");
+    JMenuItem loadItem3 = new JMenuItem("读档3(空)");
+    JMenuItem loadItem4 = new JMenuItem("读档4(空)");
 
     JMenuItem accountItem = new JMenuItem("公众号");
 
@@ -162,6 +181,20 @@ public class GameJFrame extends JFrame implements KeyListener, ActionListener {
         //创建更换图片
         JMenu changeImage = new JMenu("更换图片");
 
+        //把5个存档，添加到saveJMenu中
+        saveJMenu.add(saveItem0);
+        saveJMenu.add(saveItem1);
+        saveJMenu.add(saveItem2);
+        saveJMenu.add(saveItem3);
+        saveJMenu.add(saveItem4);
+
+        //把5个读档，添加到loadJMenu中
+        loadJMenu.add(loadItem0);
+        loadJMenu.add(loadItem1);
+        loadJMenu.add(loadItem2);
+        loadJMenu.add(loadItem3);
+        loadJMenu.add(loadItem4);
+
         //创建选项下面的选择条目
         //由于在事件监听的方法中要用到这些条目，所以让它们成为成员变量
 //        JMenuItem replayItem = new JMenuItem("重新游戏");
@@ -171,6 +204,8 @@ public class GameJFrame extends JFrame implements KeyListener, ActionListener {
         functionJMenu.add(replayItem);
         functionJMenu.add(reLoginItem);
         functionJMenu.add(closeItem);
+        functionJMenu.add(saveJMenu);
+        functionJMenu.add(loadJMenu);
 
         aboutJMenu.add(accountItem);
 
@@ -188,14 +223,62 @@ public class GameJFrame extends JFrame implements KeyListener, ActionListener {
         girl.addActionListener(this);
         animal.addActionListener(this);
         sport.addActionListener(this);
+        saveItem0.addActionListener(this);
+        saveItem1.addActionListener(this);
+        saveItem2.addActionListener(this);
+        saveItem3.addActionListener(this);
+        saveItem4.addActionListener(this);
+        loadItem0.addActionListener(this);
+        loadItem1.addActionListener(this);
+        loadItem2.addActionListener(this);
+        loadItem3.addActionListener(this);
+        loadItem4.addActionListener(this);
 
         //将两个选项添加到菜单当中
         jMenuBar.add(functionJMenu);
         jMenuBar.add(aboutJMenu);
 
+        //读取存档信息，修改菜单上表示的内容
+        getGameInfo();
+
         //给整个界面设置菜单
         this.setJMenuBar(jMenuBar);
     }
+
+    public void getGameInfo(){
+        //1、创建一个File对象表示所有存档所在的文件夹
+        File file = new File("save");
+        //2、进入文件夹，获取里面的存档文件
+        File[] files = file.listFiles();
+        //3、遍历数组，得到里面每一个存档
+        for (File f : files) {
+            //f：依次表示每一个存档文件
+            //获取每一个存档文件中的步数
+            GameInfo gi = null;
+            try {
+                ObjectInputStream ois = new ObjectInputStream(new FileInputStream(f));
+                gi = (GameInfo) ois.readObject();
+                ois.close();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+            //获取步数
+            int step = gi.getStep();
+
+            //把存档的步数同步到菜单中
+            //save0 --> 0
+
+            //获取存档的文件名save0.data
+            String name = f.getName();
+            int index = name.charAt(4) - '0';
+            //修改菜单上所表示的文字信息
+            saveJMenu.getItem(index).setText("存档" + index + "(" + step + "步)");
+            loadJMenu.getItem(index).setText("存档" + index + "(" + step + "步)");
+        }
+    }
+
 
     private void initJFrame() {
         //设置界面宽高
@@ -359,15 +442,33 @@ public class GameJFrame extends JFrame implements KeyListener, ActionListener {
             //关闭当前界面
             this.setVisible(false);
             //打开登录界面
-            new LoginJFrame();
+            try {
+                new LoginJFrame();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
         }else if(obj == closeItem){
             //可以直接把虚拟机关掉
             System.exit(0);
         }else if(obj == accountItem){
+
+            //1、创建集合Properties
+            Properties prop = new Properties();
+            //2、读取数据
+            try {
+                FileInputStream fis = new FileInputStream("game.properties");
+                prop.load(fis);
+                fis.close();
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
+
+            String path = (String) prop.get("account");
+
             //弹窗对象JDialog
             JDialog jDialog = new JDialog();
             //创建一个管理图片的容器对象JLabel
-            JLabel jLabel = new JLabel(new ImageIcon("image\\about.png"));
+            JLabel jLabel = new JLabel(new ImageIcon(path));
             //设置位置和宽高
             jLabel.setBounds(0,0,258,258);
             //把图片添加到弹框中
@@ -423,6 +524,51 @@ public class GameJFrame extends JFrame implements KeyListener, ActionListener {
             //打乱图片
             initData();
             //重新加载图片
+            initImage();
+        }else if(obj == saveItem0 || obj == saveItem1 || obj == saveItem2 || obj == saveItem3 ||obj == saveItem4){
+            //知道是哪个选项被点击了，获取其序号
+            JMenuItem item = (JMenuItem) obj;
+            String str = item.getText();
+            int index = str.charAt(2) - '0';
+            //直接把游戏的数据写到本地文件中
+            //IO流  对象整体写到文件 且不能更改  序列化
+            try {
+                ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("save\\save" + index + ".data"));
+                GameInfo gi = new GameInfo(data,x,y,path,step);
+                oos.writeObject(gi);
+                oos.close();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+            //修改一下存档item上的展示信息
+            //存档0(xx步)
+            item.setText("存档" + index + "(" + step + "步)");
+            //修改一下读档item上的展示信息
+            loadJMenu.getItem(index).setText("存档" + index + "(" + step + "步)");
+        }else if(obj == loadItem0 || obj == loadItem1 || obj == loadItem2 || obj == loadItem3 ||obj == loadItem4){
+            //知道是哪个选项被点击了，获取其序号
+            JMenuItem item = (JMenuItem) obj;
+            String str = item.getText();
+            int index = str.charAt(2) - '0';
+
+            //有序号后可以到本地文件中读取数据
+            GameInfo gi = null;
+            try {
+                ObjectInputStream ois = new ObjectInputStream(new FileInputStream("save\\save" + index + ".data"));
+                gi = (GameInfo)ois.readObject();
+                ois.close();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            } catch (ClassNotFoundException ex) {
+                ex.printStackTrace();
+            }
+            data = gi.getData();
+            x = gi.getX();
+            y = gi.getY();
+            step = gi.getStep();
+            path = gi.getPath();
+
+            //重新刷新界面加载游戏
             initImage();
         }
     }

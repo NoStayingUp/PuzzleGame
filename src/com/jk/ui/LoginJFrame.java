@@ -3,6 +3,9 @@ package com.jk.ui;
 import javax.swing.*;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
 
 import com.jk.domain.User;
@@ -12,12 +15,7 @@ public class LoginJFrame extends JFrame implements MouseListener {
     //跟登录相关的代码都写在这个界面
 
     //创建一个集合存储正确的用户名和密码
-    static ArrayList<User> list = new ArrayList<>();
-    static {
-        list.add(new User("zhangsan","123"));
-        list.add(new User("lisi","1234"));
-        list.add(new User("jack","5521"));
-    }
+    ArrayList<User> list = new ArrayList<>();
 
     //登录和注册按钮
     JButton login = new JButton();
@@ -32,7 +30,10 @@ public class LoginJFrame extends JFrame implements MouseListener {
     JLabel rightCode = new JLabel();
 
 
-    public LoginJFrame() {
+    public LoginJFrame() throws IOException {
+        //读取用户文件信息
+        readUserInfo();
+
         //初始化界面
         initJFrame();
 
@@ -41,6 +42,22 @@ public class LoginJFrame extends JFrame implements MouseListener {
 
         //让当前界面显示出来
         this.setVisible(true);
+    }
+
+    private void readUserInfo() throws IOException {
+        //创建流对象
+        BufferedReader br = new BufferedReader(new FileReader("src\\UserInfo.txt"));
+        //定义字符串，保存读取的一行文字
+        String line = null;
+        while((line = br.readLine()) != null){
+            //username=zhangsan&password=123
+            String[] userInfo = line.split("&");
+            //0 username=zhangsan  1 password=123
+            String[] usernmae = userInfo[0].split("=");
+            String[] password = userInfo[1].split("=");
+            list.add(new User(usernmae[1], password[1]));
+        }
+        br.close();
     }
 
     public void initView() {
@@ -198,6 +215,10 @@ public class LoginJFrame extends JFrame implements MouseListener {
             new GameJFrame();
         }else if(obj == register){
             register.setIcon(new ImageIcon("image\\login\\注册按钮.png"));
+            //关闭当前的登录界面
+            this.setVisible(false);
+            //打开注册界面
+            new RegisterJFrame(list);
         }else if(obj == rightCode){
             System.out.println("更换验证码");
             rightCode.setText(CodeUtil.getCode());
